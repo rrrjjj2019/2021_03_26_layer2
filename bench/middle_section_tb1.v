@@ -84,7 +84,7 @@ sram_controller controller(
 	// FSRAM1 (Real SRAM)
 	// ============================================
 	.data_in_1(data_in_1),
-	.data_in_1_2(data_in_1_2),
+	.data_in_1_2(QB_1),
 	.CENA_1(CENA_1),
 	.CENB_1(CENB_1),
 	.WENA_1(WENA_1),
@@ -98,7 +98,7 @@ sram_controller controller(
 	// FSRAM2 (Real SRAM)
 	// ============================================
 	.data_in_2(data_in_2),
-	.data_in_2_2(data_in_2_2),
+	.data_in_2_2(QB_2),
 	.CENA_2(CENA_2),
 	.CENB_2(CENB_2),
 	.WENA_2(WENA_2),

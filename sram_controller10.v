@@ -326,12 +326,18 @@ always@(posedge clk or negedge rst_n) begin
 end
 // ============================================
 // Next State Logic
+// FSM0 -> (Write the input feature map into FSRAM1.)
+// FSM1 -> (Read data from FSRAM1 and pass them to CCM.)
+// FSM2 -> (Write the CCM result into FSRAM2.)
+// ============================================
+// ============================================
+// Next State Logic
 // 0 -> ALL FSM IDLE
-// 1 -> TOP SECTION, ACTIVATE TOP_FSM0 (Write the input feature map into FSRAM1.)
-// 2 -> TOP SECTION, ACTIVATE TOP_FSM1 (Read data from FSRAM1 and pass them to CCM.)
-// 3 -> IRSRAM
-// 4 -> MIDDLE SECTION, ACTIVATE MIDDLE_FSM0 (Write the input feature map into FSRAM1.)
-// 5 -> MIDDLE SECTION, ACTIVATE MIDDLE_FSM1 (Read data from FSRAM1、IRSRAM and pass them to CCM.)
+// 1 -> TOP SECTION, ACTIVATE TOP_FSM0
+// 2 -> TOP SECTION, ACTIVATE TOP_FSM0 & TOP_FSM1
+// 3 -> TOP SECTION, ACTIVATE TOP_FSM0 & TOP_FSM1 & FSM2
+// 4 -> MIDDLE SECTION, ACTIVATE MIDDLE_FSM0 & TOP_FSM1 & FSM2
+// 5 -> MIDDLE SECTION, ACTIVATE MIDDLE_FSM0 & MIDDLE_FSM1 & FSM2
 // ============================================
 always@(*) begin
 	next_state_FSM = 0;
@@ -340,7 +346,7 @@ always@(*) begin
 			next_state_FSM = 1;
 		end
 		3'd1: begin
-			if(pxl_cnt0 == `ROW * `COL - 1) begin
+			if(pxl_cnt0 == 2 * `COL - 1) begin
 				next_state_FSM = 2;
 			end
 			else begin
@@ -348,7 +354,7 @@ always@(*) begin
 			end
 		end
 		3'd2: begin
-			if(pxl_cnt1 == `COL + 2 + `COL * (`ROW - 2) - 1) begin
+			if(pxl_cnt1 == 2 - 1) begin
 				next_state_FSM = 3;
 			end
 			else begin
@@ -356,7 +362,7 @@ always@(*) begin
 			end
 		end
 		3'd3: begin
-			if(col_cnt2 == `COL - 1) begin
+			if(pxl_cnt0 == `ROW * `COL - 1) begin
 				next_state_FSM = 4;
 			end
 			else begin
@@ -364,7 +370,7 @@ always@(*) begin
 			end
 		end
 		3'd4: begin
-			if(pxl_cnt0 == `ROW * `COL - 1)begin
+			if(pxl_cnt1 == `COL + 2 + `COL * (`ROW - 2) - 1)begin
 				next_state_FSM = 5;
 			end
 			else begin
@@ -373,7 +379,8 @@ always@(*) begin
 		end
 		3'd5: begin
 			if(pxl_cnt_FSM1_middleSection == `COL + 2 + `COL * (`ROW - 1) - 1) begin
-				next_state_FSM = 3;
+				// need to be changed after buttom section implemented.
+				next_state_FSM = 5;
 			end
 			else begin
 				next_state_FSM = 5;
@@ -393,19 +400,31 @@ always@(*) begin
 			FSM_flag = `ALL_FSM_IDLE;
 		end
 		3'd1: begin
-			FSM_flag = `ACTIVATE_TOP_FSM0;
+			FSM_flag = `ALL_FSM_IDLE;
+			FSM_flag[`TOP_FSM0] = 1;
 		end
 		3'd2: begin
-			FSM_flag = `ACTIVATE_TOP_FSM1;
+			FSM_flag = `ALL_FSM_IDLE;
+			FSM_flag[`TOP_FSM0] = 1;
+			FSM_flag[`TOP_FSM1] = 1;
 		end
 		3'd3: begin
-			FSM_flag = `ACTIVATE_TOP_FSM2;
+			FSM_flag = `ALL_FSM_IDLE;
+			FSM_flag[`TOP_FSM0] = 1;
+			FSM_flag[`TOP_FSM1] = 1;
+			FSM_flag[`FSM2] = 1;
 		end
 		3'd4: begin
-			FSM_flag = `ACTIVATE_MIDDLE_FSM0; 
+			FSM_flag = `ALL_FSM_IDLE;
+			FSM_flag[`MIDDLE_FSM0] = 1;
+			FSM_flag[`TOP_FSM1] = 1;
+			FSM_flag[`FSM2] = 1;
 		end
 		3'd5: begin
-			FSM_flag = `ACTIVATE_MIDDLE_FSM1;
+			FSM_flag = `ALL_FSM_IDLE;
+			FSM_flag[`MIDDLE_FSM0] = 1;
+			FSM_flag[`MIDDLE_FSM1] = 1;
+			FSM_flag[`FSM2] = 1;
 		end
 		default: begin
 			FSM_flag = `ALL_FSM_IDLE;
@@ -421,7 +440,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		start_cnt_FSM0_middleSection <= #1 0;
 	end
-	else if(FSM_flag == `ACTIVATE_MIDDLE_FSM0) begin
+	else if(FSM_flag[`MIDDLE_FSM0]) begin
 		start_cnt_FSM0_middleSection <= #1 1;
 	end
 	else begin
@@ -433,7 +452,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		curr_state_FSM0_middleSection <= #1 0;
 	end
-	else if(FSM_flag == `ACTIVATE_MIDDLE_FSM0) begin
+	else if(FSM_flag[`MIDDLE_FSM0]) begin
 		curr_state_FSM0_middleSection <= #1 next_state_FSM0_middleSection;
 	end
 	else begin
@@ -445,7 +464,7 @@ always@(*) begin
 	next_state_FSM0_middleSection = 0;
 	case(curr_state_FSM0_middleSection) //synopsys parallel_case
 		2'd0: begin
-			if(FSM_flag == `ACTIVATE_MIDDLE_FSM0) begin
+			if(FSM_flag[`MIDDLE_FSM0]) begin
 				next_state_FSM0_middleSection = 1;
 			end
 			else begin
@@ -483,7 +502,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		curr_state_FSM1_middleSection <= #1 0;
 	end
-	else if(FSM_flag == `ACTIVATE_MIDDLE_FSM1) begin
+	else if(FSM_flag[`MIDDLE_FSM1]) begin
 		curr_state_FSM1_middleSection <= #1 next_state_FSM1_middleSection;
 	end
 	else begin
@@ -563,7 +582,7 @@ always@(posedge clk or negedge rst_n)begin
 		pxl_cnt_FSM1_middleSection <= #1 0;
 	end
 	else begin
-		if(FSM_flag == `ACTIVATE_MIDDLE_FSM1)begin
+		if(FSM_flag[`MIDDLE_FSM1])begin
 			pxl_cnt_FSM1_middleSection <= #1 pxl_cnt_FSM1_middleSection + 1;
 		end
 		else begin
@@ -695,7 +714,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		curr_state0 <= #1 0;
 	end
-	else if(FSM_flag[0]) begin
+	else if(FSM_flag[`TOP_FSM0]) begin
 		curr_state0 <= #1 next_state0;
 	end
 	else begin
@@ -710,7 +729,7 @@ always@(*) begin
 	next_state0 = 0;
 	case(curr_state0) //synopsys parallel_case
 		4'd0: begin
-			if(FSM_flag[0]) begin
+			if(FSM_flag[`TOP_FSM0]) begin
 				if(curr_layer == 1) begin
 					next_state0 = 1;
 				end
@@ -844,7 +863,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		curr_state1 <= #1 0;
 	end
-	else if(FSM_flag[1]) begin
+	else if(FSM_flag[`TOP_FSM1]) begin
 		curr_state1 <= #1 next_state1;
 	end
 	else begin
