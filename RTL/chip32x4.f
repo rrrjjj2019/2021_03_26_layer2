@@ -1,0 +1,23 @@
+chip32x4.v
+	./CCM/CCM_top.v
+		./CCM/PEA_filter.v
+			./CCM/PE_array_top.v
+				./CCM/MUX4to1.v
+				./CCM/MUX3to1.v
+				./CCM/quantize_new.v
+				./CCM/PE_top.v
+				./CCM/register_array/stack_top.v
+				./CCM/register_array/stack.v
+					./CCM/register_array/rf_sp_stack.v
+		./CCM/adder_tree.v
+	./sram_module/sram_top.v
+		./sram_module/sram_controller.v
+		./sram_module/data_process.v
+		./sram_module/fsram.v
+			./sram_module/sram_dp_hde.v
+		./sram_module/wsram.v
+			./sram_module/rf_sp_wsram.v
+		./sram_module/orsram.v
+			./sram_module/rf_sp_orsram.v
+
+../bench/chip32x4_tb.v
