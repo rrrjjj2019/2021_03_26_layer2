@@ -27,7 +27,7 @@ module Data_process(
 
 reg		[`CHANNEL_OUT * 16 - 1 : 0] data_in_1_reg;
 reg		[`CHANNEL_OUT * 16 - 1 : 0] data_in_2_reg;
-reg		[2:0]						data_process_reg;
+//reg		[2:0]						data_process_reg;
 
 reg		[1:0]						cnt;
 integer i;
@@ -44,7 +44,7 @@ assign FSRAM_sel = FSRAM1 ? (FSRAM2 ? 2'd0 : 2'd1) : (FSRAM2 ? 2'd2 : 2'd0);
 always@(posedge clk) begin
 	data_in_1_reg <= #1 data_in_1;
 	data_in_2_reg <= #1 data_in_2;
-	data_process_reg <= #1 data_process;
+	//data_process_reg <= #1 data_process;
 end
 
 // ============================================
@@ -54,7 +54,7 @@ always@(*) begin
 	data1 = 0;
 	case(FSRAM_sel)
 		2'd1: begin
-			case(data_process_reg)
+			case(data_process)
 				3'd0: begin
 					data1 = 0;
 				end
@@ -88,7 +88,7 @@ always@(*) begin
 			endcase
 		end
 		2'd2: begin
-			case(data_process_reg)
+			case(data_process)
 				3'd0: begin
 					data1 = 0;
 				end
@@ -134,7 +134,7 @@ always@(*) begin
 	data2 = 0;
 	case(FSRAM_sel)
 		2'd1: begin
-			case(data_process_reg)
+			case(data_process)
 				3'd0: begin
 					data2 = 0;
 				end
@@ -166,7 +166,7 @@ always@(*) begin
 			endcase
 		end
 		2'd2: begin
-			case(data_process_reg)
+			case(data_process)
 				3'd0: begin
 					data2 = 0;
 				end
