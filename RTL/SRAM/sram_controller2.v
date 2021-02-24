@@ -65,14 +65,14 @@ module sram_controller(
 	output 	reg 							CCM_en,
 	output 	reg								CCM_en_cnt,
 
-	output	reg								Weight_en,
-	output  reg [2:0]	                    curr_state_FSM
+	output	reg								Weight_en
 );
 
 reg		[3:0]	curr_layer;
 
 reg		[3 - 1:0]	FSM_flag;
-reg		[2:0]	next_state_FSM;
+reg     [2:0]   					curr_state_FSM;
+reg		[2:0]						next_state_FSM;
 
 // ============================================
 // FSM0 
@@ -87,8 +87,8 @@ reg		[14 - 1:0]					pxl_cnt_FSM0;
 reg		[4 - 1:0]					curr_state_FSM1;
 reg		[4 - 1:0]					next_state_FSM1;
 reg 	[14 - 1 : 0]                pxl_cnt_FSM1;
-reg     [7 - 1 : 0]					col_cnt_FSM1;
-
+reg     [8 - 1 : 0]					col_cnt_FSM1;
+reg     [8 - 1 : 0]					col_cnt_FSM1_reg;
 // ============================================
 // FSM2 
 // ============================================
@@ -203,7 +203,7 @@ always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		CCM_en <= 0;
 	end
-	else if (curr_state_FSM1 == 1) begin
+	else if (FSM_flag[`FSM1]) begin
 		CCM_en <= 1;
 	end
 	else begin
@@ -386,14 +386,14 @@ end
 
 always@(posedge clk or negedge rst_n)begin
 	if(!rst_n)begin
-		pxl_cnt_FSM0 <= #1 0;
+		pxl_cnt_FSM0 <= #1 14'b11_1111_1111_1111;
 	end
 	else begin
 		if(FSM_flag[`FSM0])begin
 			pxl_cnt_FSM0 <= #1 pxl_cnt_FSM0 + 1;
 		end
 		else begin
-			pxl_cnt_FSM0 <= #1 0;
+			pxl_cnt_FSM0 <= #1 14'b11_1111_1111_1111;
 		end
 	end
 end
@@ -403,7 +403,7 @@ always@(posedge clk or negedge rst_n) begin
 		curr_state_FSM0 <= #1 0;
 	end
 	else if(FSM_flag[`FSM0]) begin
-		curr_state_FSM0 <= #1 next_state_FSM0
+		curr_state_FSM0 <= #1 next_state_FSM0;
 	end
 	else begin
 		curr_state_FSM0 <= #1 0;
@@ -446,6 +446,69 @@ end
 // Read data from FSRAM1 to CCM
 // ============================================
 
+always@(posedge clk or negedge rst_n)begin
+	if(!rst_n)begin
+		col_cnt_FSM1_reg <= #1 0;
+	end
+	else begin
+		if(FSM_flag[`FSM1])begin
+			col_cnt_FSM1_reg <= #1 col_cnt_FSM1;
+		end
+		else begin
+			col_cnt_FSM1_reg <= #1 0;
+		end
+	end
+end
+
+
+always@(*) begin
+	case(curr_state_FSM1) //synopsys parallel_case
+		4'd0: begin
+			col_cnt_FSM1 = 0;
+		end
+		4'd1: begin
+			col_cnt_FSM1 = col_cnt_FSM1_reg;
+		end
+		4'd2: begin
+			col_cnt_FSM1 = col_cnt_FSM1_reg + 1;
+		end
+		4'd3: begin
+			col_cnt_FSM1 = `COL_first_layer;
+		end
+		4'd4: begin
+			if(col_cnt_FSM1_reg == `COL_first_layer)begin
+				col_cnt_FSM1 = col_cnt_FSM1_reg - 2;
+			end
+			else begin
+				col_cnt_FSM1 = col_cnt_FSM1_reg - 1;
+			end
+		end
+		4'd5: begin
+			col_cnt_FSM1 = col_cnt_FSM1_reg - 1;
+		end
+		4'd6: begin
+			col_cnt_FSM1 = col_cnt_FSM1_reg;
+		end
+		4'd7: begin
+			col_cnt_FSM1 = 1;
+		end
+		4'd8: begin
+			if(col_cnt_FSM1_reg == 1)begin
+				col_cnt_FSM1 = col_cnt_FSM1_reg + 2;
+			end
+			else begin
+				col_cnt_FSM1 = col_cnt_FSM1_reg + 1;
+			end
+		end
+		4'd9: begin
+			col_cnt_FSM1 = col_cnt_FSM1_reg + 1;
+		end
+		default: begin
+			col_cnt_FSM1 = 0;
+		end
+	endcase
+end
+
 always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
 		curr_state_FSM1 <= #1 0;
@@ -466,14 +529,14 @@ always@(*) begin
 		end
 		4'd1: begin
 			if(col_cnt_FSM1 == `COL_first_layer) begin
-				next_state_FSM1 = 4;
+				next_state_FSM1 = 3;
 			end
 			else begin
 				next_state_FSM1 = 2;
 			end
 		end
 		4'd2: begin
-			if(col_cnt_FSM1 == `COL_first_layer - 1)begin
+			if(col_cnt_FSM1 == `COL_first_layer)begin
 				next_state_FSM1 = 1;
 			end
 			else begin
@@ -487,7 +550,7 @@ always@(*) begin
 			next_state_FSM1 = 5;
 		end
 		4'd5: begin
-			if(col_cnt_FSM1 == 2) begin
+			if(col_cnt_FSM1 == 1) begin
 				next_state_FSM1 = 6;
 			end
 			else begin
@@ -509,7 +572,7 @@ always@(*) begin
 			next_state_FSM1 = 9;
 		end
 		4'd9: begin
-			if(col_cnt_FSM1 == `COL_first_layer - 1)begin
+			if(col_cnt_FSM1 == `COL_first_layer)begin
 				next_state_FSM1 = 6;
 			end
 			else begin
@@ -524,65 +587,19 @@ end
 
 always@(posedge clk or negedge rst_n)begin
 	if(!rst_n)begin
-		pxl_cnt_FSM1 <= #1 0;
+		pxl_cnt_FSM1 <= #1 14'b11_1111_1111_1111;
 	end
 	else begin
 		if(FSM_flag[`FSM1])begin
 			pxl_cnt_FSM1 <= #1 pxl_cnt_FSM1 + 1;
 		end
 		else begin
-			pxl_cnt_FSM1 <= #1 0;
+			pxl_cnt_FSM1 <= #1 14'b11_1111_1111_1111;
 		end
 	end
 end
 
-always@(*) begin
-	case(curr_state_FSM1) //synopsys parallel_case
-		4'd0: begin
-			col_cnt_FSM1 = 0;
-		end
-		4'd1: begin
-			col_cnt_FSM1 = col_cnt_FSM1;
-		end
-		4'd2: begin
-			col_cnt_FSM1 = col_cnt_FSM1 + 1;
-		end
-		4'd3: begin
-			col_cnt_FSM1 = `COL_first_layer;
-		end
-		4'd4: begin
-			if(col_cnt_FSM1 == `COL_first_layer)begin
-				col_cnt_FSM1 = col_cnt_FSM1 - 2;
-			end
-			else begin
-				col_cnt_FSM1 = col_cnt_FSM1 - 1;
-			end
-		end
-		4'd5: begin
-			col_cnt_FSM1 = col_cnt_FSM1 - 1;
-		end
-		4'd6: begin
-			col_cnt_FSM1 = col_cnt_FSM1;
-		end
-		4'd7: begin
-			col_cnt_FSM1 = 1;
-		end
-		4'd8: begin
-			if(col_cnt_FSM1 == 1)begin
-				col_cnt_FSM1 = col_cnt_FSM1 + 2;
-			end
-			else begin
-				col_cnt_FSM1 = col_cnt_FSM1 + 1;
-			end
-		end
-		4'd9: begin
-			col_cnt_FSM1 = col_cnt_FSM1 + 1;
-		end
-		default: begin
-			col_cnt_FSM1 = 0;
-		end
-	endcase
-end
+
 
 // ============================================
 // Finite State Machine 2
@@ -596,13 +613,13 @@ end
 // ============================================
 always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
-		pxl_cnt_FSM2 <= #1 0;
+		pxl_cnt_FSM2 <= #1 14'b11_1111_1111_1111;
 	end
 	else if(FSM_flag[`FSM2]) begin
 		pxl_cnt_FSM2 <= #1 pxl_cnt_FSM2 + 1;
 	end
 	else begin
-		pxl_cnt_FSM2 <= #1 0;
+		pxl_cnt_FSM2 <= #1 14'b11_1111_1111_1111;
 	end
 end
 // ============================================
@@ -988,7 +1005,7 @@ end
 // ============================================
 always@(*) begin
 	if(FSM_flag[`FSM2]) begin
-		case(curr_state2) //synopsys parallel_case
+		case(curr_state_FSM2) //synopsys parallel_case
 			4'd0: begin
 				RENA_2 = ~{32{1'b0}};
 			end
@@ -1246,7 +1263,7 @@ end
 // ============================================
 always@(*) begin
 	if(FSM_flag[`FSM2]) begin
-		case(curr_state2) //synopsys parallel_case
+		case(curr_state_FSM2) //synopsys parallel_case
 			4'd0: begin
 				WENA_2 = ~{32{1'b0}};
 			end

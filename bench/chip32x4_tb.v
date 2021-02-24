@@ -18,8 +18,8 @@ reg												en;
 reg		[`PEA_num * 8 - 1 : 0]				data_in;
 
 reg		[99 * 8 : 0]							fin_name;	// input data file name
-reg		[7:0]									data_mem_tmp[0 : `ROW * `COL - 1];
-reg		[`CHANNEL_IN * 8 - 1 : 0]				data_mem[0:257][0:257];
+reg		[7:0]									data_mem_tmp[0 : `ROW_first_layer * `COL_first_layer - 1];
+reg		[`CHANNEL_IN * 8 - 1 : 0]				data_mem[0:`ROW_first_layer + 2 - 1][0:`COL_first_layer + 2 - 1];
 
 reg		[99 * 8 : 0]							fw_name;	// weight data file name
 reg		[7:0]									weight_mem_tmp[0 : 9*32*4-1];
@@ -78,16 +78,17 @@ initial begin
 	// ============================================
 	for(i = 0; i < 3; i = i + 1) begin
 		// fin_name = $sformatf("../gen_bench/input/input%0d.txt", i+1);
-		fin_name = $sformatf("../gen_bench/input_256x16/input%0d.txt", i+1);
+		// fin_name = $sformatf("../bench/input_128x128/input%0d.txt", i+1);
+		fin_name = "../bench/input_128x128/input1.txt";
 		fp = $fopen(fin_name, "r");
 
-		for(j = 0; j < `ROW * `COL; j = j + 1) begin
+		for(j = 0; j < `ROW_first_layer * `COL_first_layer; j = j + 1) begin
 			scan_i = $fscanf(fp, "%h", data_mem_tmp[j]);
 		end
 
-		for(row = 0; row < `ROW; row = row + 1) begin
-			for(col = 0; col < `COL; col = col + 1) begin
-				data_mem[row][col][(i + 1) * 8 - 1 -: 8] = data_mem_tmp[`COL*row+col];
+		for(row = 0; row < `ROW_first_layer; row = row + 1) begin
+			for(col = 0; col < `COL_first_layer; col = col + 1) begin
+				data_mem[row][col][(i + 1) * 8 - 1 -: 8] = data_mem_tmp[`COL_first_layer * row + col];
 			end
 		end
 		$fclose(fp);
@@ -98,7 +99,7 @@ initial begin
 	// ============================================
 	for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
 		for(j = 0; j < `CHANNEL_OUT; j = j + 1) begin
-			fw_name = $sformatf("../gen_bench/weight/weight_%02d_%02d.txt", i+1, j+1);
+			fw_name = $sformatf("../bench/weight/weight_%02d_%02d.txt", i+1, j+1);
 			fp = $fopen(fw_name, "r");
 
 			for(k = 0; k < 9; k = k + 1) begin
@@ -110,6 +111,7 @@ initial begin
 	for(i = 0; i < `CHANNEL_OUT; i = i + 1) begin
 		for(PEA_row = 0; PEA_row < 3; PEA_row = PEA_row + 1) begin
 			for(filter_col = 0; filter_col < 4; filter_col = filter_col + 1) begin
+				// 9 x 32 = 288
 				weight_mem[filter_col][PEA_row][(i+1) * 24 - 1 -: 24] = 
 				{	weight_mem_tmp[i * 9 + PEA_row * 3 + filter_col * 288], 
 					weight_mem_tmp[i * 9 + PEA_row * 3 + filter_col * 288 + 1], 
@@ -125,7 +127,7 @@ initial begin
     f_out = $fopen("../bench/result/output_1.txt","w");
     f_out_log = $fopen("../bench/result/output_log_1.txt", "w");
     // f_out_ans = $fopen("../gen_bench/output_ans/output_ans_01_01.txt", "r");
-    f_out_ans = $fopen("../gen_bench/output_ans_256x16_quantised/output_ans_01_01.txt", "r");
+    f_out_ans = $fopen("../bench/aftermaxpooling(64x64)/output_ans_64x64_maxpooling/output_ans_01_01.txt", "r");
 
     for (i = 0; i < `OUTPUT_ROW * `OUTPUT_COL; i = i + 1)
     begin
@@ -249,23 +251,23 @@ initial begin
 	data_in = {{28{8'd0}}, data_mem[5][5]};*/
 
 	// First Right Shifting
-	for(col = 0; col < `COL; col = col + 1) begin
+	for(col = 0; col < `COL_first_layer; col = col + 1) begin
 		for(row = 0; row < 2; row = row + 1) begin
 			@(posedge clk)
 			data_in = #1 {{29{8'd0}}, data_mem[row][col]};
 		end
 	end
-	for(row = 2; row < `ROW; row = row + 1) begin
+	for(row = 2; row < `ROW_first_layer; row = row + 1) begin
 		// Left shifting
 		if(row % 2 == 0) begin
-			for(col = `COL - 1; col >= 0; col = col - 1) begin
+			for(col = `COL_first_layer - 1; col >= 0; col = col - 1) begin
 				@(posedge clk)
 				data_in = #1 {{29{8'd0}}, data_mem[row][col]};
 			end
 		end
 		// Right Shifting
 		else begin
-			for(col = 0; col < `COL; col = col + 1) begin
+			for(col = 0; col < `COL_first_layer; col = col + 1) begin
 				@(posedge clk)
 				data_in = #1 {{29{8'd0}}, data_mem[row][col]};
 			end
@@ -284,7 +286,7 @@ initial begin
 end
 
 initial begin
-	#79485
+	#150000
 	// $display("%x", data_mem[14][255]);
 	$finish;
 end
@@ -295,7 +297,7 @@ initial begin
 	for(filter_col = 0; filter_col < 4; filter_col = filter_col + 1) begin
 		for(PEA_row = 0; PEA_row < 3; PEA_row = PEA_row + 1) begin
 			@(posedge clk)
-			weight_in = weight_mem[filter_col][PEA_row];
+			weight_in = #1 weight_mem[filter_col][PEA_row];
 			// $display("%h", weight_in);
 		end
 	end

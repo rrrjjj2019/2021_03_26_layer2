@@ -103,23 +103,23 @@ wsram wsram(
 	.Q(Q_w)
 );
 
-irsram irsram(
-	.clk(clk),
-	.CEN(CEN_ir),
-	.WEN(WEN_ir),
-	.A({`SRAM_NUM{A_ir}}),
-	.D(D_ir),
-	.Q(Q_ir)
-);
+// irsram irsram(
+// 	.clk(clk),
+// 	.CEN(CEN_ir),
+// 	.WEN(WEN_ir),
+// 	.A({`SRAM_NUM{A_ir}}),
+// 	.D(D_ir),
+// 	.Q(Q_ir)
+// );
 
-orsram orsram(
-	.clk(clk),
-	.CEN(CEN_or),
-	.WEN(WEN_or),
-	.A({`SRAM_NUM{A_or}}),
-	.D(D_or),
-	.Q(Q_or)
-);
+// orsram orsram(
+// 	.clk(clk),
+// 	.CEN(CEN_or),
+// 	.WEN(WEN_or),
+// 	.A({`SRAM_NUM{A_or}}),
+// 	.D(D_or),
+// 	.Q(Q_or)
+// );
 
 sram_controller controller(
 	.clk(clk),
@@ -150,14 +150,14 @@ sram_controller controller(
 	.WEN_w(WEN_w),
 	.A_w(A_w),
 	.D_w(D_w),
-	.CEN_ir(CEN_ir),
-	.WEN_ir(WEN_ir),
-	.A_ir(A_ir),
-	.D_ir(D_ir),
-	.CEN_or(CEN_or),
-	.WEN_or(WEN_or),
-	.A_or(A_or),
-	.D_or(D_or),
+	// .CEN_ir(CEN_ir),
+	// .WEN_ir(WEN_ir),
+	// .A_ir(A_ir),
+	// .D_ir(D_ir),
+	// .CEN_or(CEN_or),
+	// .WEN_or(WEN_or),
+	// .A_or(A_or),
+	// .D_or(D_or),
 	.sram_sel1(sram_sel1),
 	.sram_sel2(sram_sel2),
 	.data_process_reg(data_process),

@@ -24,6 +24,9 @@
 `define FSM1            1
 `define FSM2            2
 
+`define	ROW	            128
+`define	COL	            128
+
 
 // =======================
 // Test Bench
@@ -39,8 +42,8 @@
 
 `define DATA_ROW	17
 `define DATA_COL	258
-`define OUTPUT_ROW	16
-`define OUTPUT_COL	256
+`define OUTPUT_ROW	64
+`define OUTPUT_COL	64
 
 `define CHIP_ENABLE ~1'b1
 `define CHIP_DISABLE ~1'b0
