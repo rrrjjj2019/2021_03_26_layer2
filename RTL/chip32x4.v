@@ -15,7 +15,7 @@ module chip(
 
 	output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum,
 	output											sum_reg_valid,
-	output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg,
+	//output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg,
 
 	output	[`filter_num * 8 - 1 : 0]				partial_sum
 );

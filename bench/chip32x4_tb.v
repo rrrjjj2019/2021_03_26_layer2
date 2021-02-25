@@ -31,7 +31,7 @@ reg		[`CHANNEL_OUT * 24 - 1 : 0]				weight_in;
 
 wire    [`filter_num * `PEA_num * 8 - 1 : 0]	sum;
 wire											sum_reg_valid;
-wire    [`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg;
+//wire    [`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg;
 
 integer								fp;
 integer								scan_i;
@@ -61,7 +61,7 @@ chip chip1(
 	.weight_in(weight_in),
 	.sum(sum),
 	.sum_reg_valid(sum_reg_valid),
-	.sum_reg(sum_reg),
+	//.sum_reg(sum_reg),
 	.partial_sum()
 );
 // initial begin
@@ -76,10 +76,10 @@ initial begin
 	// ============================================
 	// READ INPUT DATA
 	// ============================================
-	for(i = 0; i < 3; i = i + 1) begin
+	for(i = 0; i < 4; i = i + 1) begin
 		// fin_name = $sformatf("../gen_bench/input/input%0d.txt", i+1);
 		// fin_name = $sformatf("../bench/input_128x128/input%0d.txt", i+1);
-		fin_name = "../bench/input_128x128/input1.txt";
+		fin_name = $sformatf("../bench/input_128x128/input%0d.txt", i+1);
 		fp = $fopen(fin_name, "r");
 
 		for(j = 0; j < `ROW_first_layer * `COL_first_layer; j = j + 1) begin
@@ -259,6 +259,7 @@ initial begin
 	end
 	for(row = 2; row < `ROW_first_layer; row = row + 1) begin
 		// Left shifting
+		$display(row);
 		if(row % 2 == 0) begin
 			for(col = `COL_first_layer - 1; col >= 0; col = col - 1) begin
 				@(posedge clk)
@@ -286,7 +287,7 @@ initial begin
 end
 
 initial begin
-	#150000
+	#200000
 	// $display("%x", data_mem[14][255]);
 	$finish;
 end
