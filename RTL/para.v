@@ -42,8 +42,8 @@
 
 `define DATA_ROW	17
 `define DATA_COL	258
-`define OUTPUT_ROW	64
-`define OUTPUT_COL	64
+`define OUTPUT_ROW	128
+`define OUTPUT_COL	128
 
 `define CHIP_ENABLE ~1'b1
 `define CHIP_DISABLE ~1'b0

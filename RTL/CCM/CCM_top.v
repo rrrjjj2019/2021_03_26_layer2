@@ -41,6 +41,10 @@ wire	[`PEA_num * 8 - 1 : 0]	buf_in2;
 wire	[`PEA_num * 8 - 1 : 0]	buf_out1;
 wire	[`PEA_num * 8 - 1 : 0]	buf_out2;
 
+wire [8:0] 						col_without_padding;
+
+assign col_without_padding = col - 2;
+
 generate
 	genvar i;
 		for(i = 0; i < `filter_num; i = i + 1) begin
