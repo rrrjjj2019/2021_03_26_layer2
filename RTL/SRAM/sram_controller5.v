@@ -42,6 +42,20 @@ module sram_controller(
 	output	reg	[4:0]						A_w,
 	output	reg	[`SRAM_NUM * 72 - 1 : 0]	D_w,
 
+	// ============================================
+	// ORSRAM (Real SRAM)
+	// ============================================
+	input		[`filter_num * 8 - 1 : 0]		partial_sum,
+	input 		[`CHANNEL_OUT * 8 - 1 : 0]		Q_or,
+	output	reg									CEN_or,
+	output	reg	[`CHANNEL_OUT - 1 : 0]			WEN_or,
+	output	reg	[6:0]							A_or,
+	output	reg	[`CHANNEL_OUT * 8 - 1 : 0]		D_or,
+	output 	reg [`CHANNEL_OUT * 16 - 1 : 0] 	or_pooling_output,
+	output  reg [2:0]							curr_state_or_output,
+	output  reg [11:0]							OR_pxl_cnt;
+
+	
 
 	// ============================================
 	// Data Process
@@ -94,7 +108,7 @@ reg     [8 - 1 : 0]					col_cnt_FSM1_reg;
 // ============================================
 reg		[4 - 1:0]					curr_state_FSM2;
 reg		[4 - 1:0]					next_state_FSM2;
-reg 	[12 - 1:0]					pxl_cnt_FSM2;
+reg 	[15 - 1:0]					pxl_cnt_FSM2;
 reg 	[6 - 1:0]					col_cnt_FSM2;
 
 // ============================================
@@ -129,6 +143,18 @@ reg 	[`CHANNEL_OUT * 16 - 1 : 0]	data_in_tmp2_reg;
 reg		[`SRAM_NUM - 1 : 0]			RENA_2;
 reg		[`SRAM_NUM - 1 : 0]			RENB_2;
 
+// ============================================
+// ORSRAM
+// ============================================
+
+reg		[2:0]	curr_state_or;
+reg		[2:0]	next_state_or;
+reg		[6:0]	A_or_reg;
+reg		[`CHANNEL_OUT * 8 - 1 : 0]	or_in_tmp;
+reg		[`CHANNEL_OUT * 16 - 1 : 0]	or_pooling_reg;
+reg		[`CHANNEL_OUT * 8 - 1 : 0]	D_or_reg;
+reg		[`CHANNEL_OUT * 16 - 1 : 0]	or_pooling;
+
 
 // ============================================
 // OTHER
@@ -140,7 +166,6 @@ reg				start_cntw;
 reg		[1:0]	w_cnt;
 reg		[2:0]	k_cnt;
 reg		[1:0]	out_cnt;
-
 
 
 
@@ -613,13 +638,13 @@ end
 // ============================================
 always@(posedge clk or negedge rst_n) begin
 	if(!rst_n) begin
-		pxl_cnt_FSM2 <= #1 14'b11_1111_1111_1111;
+		pxl_cnt_FSM2 <= #1 15'b111_1111_1111_1111;
 	end
 	else if(FSM_flag[`FSM2]) begin
 		pxl_cnt_FSM2 <= #1 pxl_cnt_FSM2 + 1;
 	end
 	else begin
-		pxl_cnt_FSM2 <= #1 14'b11_1111_1111_1111;
+		pxl_cnt_FSM2 <= #1 15'b111_1111_1111_1111;
 	end
 end
 // ============================================
@@ -1736,6 +1761,342 @@ always@(*) begin
 	end
 	else begin
 		Weight_en = 1;
+	end
+end
+//======================================================================================
+
+// ============================================
+// Finite State Machine (ORSRAM)
+// ============================================
+always@(posedge clk or negedge rst_n) begin
+	if(!rst_n) begin
+		curr_state_or <= #1 0;
+	end
+	else if(pxl_cnt_FSM2 >= 4) begin
+		curr_state_or <= #1 next_state_or;
+	end
+	else begin
+		curr_state_or <= #1 curr_state_or;
+	end
+end
+
+// ============================================
+// or_pxl_cnt
+// ============================================
+always@(posedge clk or negedge rst_n) 
+begin
+	if(!rst_n)
+	begin
+		OR_pxl_cnt <= #1 0;
+	end
+	else if (FSM_flag[`FSM2] && pxl_cnt_FSM2 >3) 
+	begin
+		OR_pxl_cnt <= #1 OR_pxl_cnt +1;
+	end
+	else
+	begin
+		OR_pxl_cnt <= #1 0;
+	end
+end
+always@(posedge clk or negedge rst_n) 
+begin
+	if(!rst_n)
+	begin
+		OR_row_cnt <= #1 0;
+	end
+	else if(OR_pxl_cnt == 255)
+	begin
+		OR_row_cnt <= #1 OR_row_cnt + 1;
+	end
+	else if(OR_row_cnt == (`ROW_first_layer/2) -1) begin
+		OR_row_cnt <= #1 (`ROW_first_layer/2 - 1); 
+	end
+	else begin
+		OR_row_cnt <= #1 0;
+	end
+end
+
+// ============================================
+// Next State Logic
+// ============================================
+always@(*) begin
+	next_state_or = 0;
+	case(curr_state_or)
+		3'd0: begin
+			next_state_or = 1;
+		end
+		3'd1: begin
+			if(OR_pxl_cnt == (`COL_first_layer - 2))
+			begin
+				next_state_or =2;
+			end
+			else begin
+				next_state_or =1;
+			end
+				
+			end
+		end
+		3'd2: 
+		begin
+			next_state_or = 3;
+		end
+		3'd3: 
+		begin
+				next_state_or =4;
+		end
+		3'd4: 
+		begin
+			if(OR_row_cnt >= (`ROW_first_layer/2)-1)
+			begin
+				next_state_or =6;
+			end
+			else if(OR_pxl_cnt ==  (`ROW_first_layer*2 )-1)begin
+				next_state_or = 1;
+			end
+		end
+		3'd5: 
+		begin
+			next_state_or=4;
+		end
+		3'd6: begin
+			next_state_or =0;
+		end
+		default: begin
+			next_state_or = 0;
+		end
+	endcase
+end
+
+// ============================================
+// CEN_or
+// ============================================
+always@(*) begin
+	if(pxl_cnt_FSM2 >= 4) begin
+		case(curr_state_or)
+			3'd0: begin
+				CEN_or = ~1'b0;
+			end
+			3'd1: begin
+				CEN_or = ~1'b1;
+			end
+			3'd2: begin
+				CEN_or = ~1'b1;
+			end
+			3'd3: begin
+				CEN_or = ~1'b1;
+			end
+			3'd4: begin
+				CEN_or = ~1'b1;
+			end
+			3'd5: begin
+				CEN_or = ~1'b1;
+			end
+			3'd6: begin
+				CEN_or = ~1'b0;
+			end
+			default: begin
+				CEN_or = ~1'b0;
+			end
+		endcase
+	end
+	else begin
+		CEN_or = ~1'b0;
+	end
+end
+
+// ============================================
+// WEN_or
+// ============================================
+always@(*) begin
+	if(pxl_cnt_FSM2 >= 4) begin
+		case(curr_state_or)
+			3'd0: begin
+				WEN_or = {32{~1'b1}};
+			end
+			3'd1: begin
+				WEN_or = {32{~1'b1}};
+			end
+			3'd2: begin
+				WEN_or = {32{~1'b0}};
+			end
+			3'd3: begin
+				WEN_or = {32{~1'b0}};
+			end
+			3'd4: begin
+				WEN_or = {32{~1'b0}};
+			end
+			3'd5: begin
+				WEN_or = {32{~1'b0}};
+			end
+			3'd6: begin
+				WEN_or = {32{~1'b0}};
+			end
+			default: begin
+				WEN_or = {32{~1'b0}};
+			end
+		endcase
+	end
+	else begin
+		WEN_or = {32{~1'b1}};
+	end
+end
+
+// ============================================
+// A_or
+// ============================================
+always@(posedge clk or negedge rst_n) begin
+	if(!rst_n) begin
+		A_or_reg <= #1 {7{1'd0}};
+	end
+	else begin
+		A_or_reg <= #1 A_or;
+	end
+end
+always@(*) begin 
+	if(pxl_cnt_FSM2 >= 4) begin
+		case(curr_state_or)
+			3'd0: begin
+				A_or = {7{1'd0}};
+			end
+			3'd1: begin
+				A_or = A_or_reg + 1;
+			end
+			3'd2: begin
+				A_or = A_or_reg;
+			end
+			3'd3: begin
+				A_or = A_or_reg;
+			end
+			3'd4: begin
+				A_or = A_or_reg - 1;
+			end
+			3'd5: begin
+				A_or = A_or_reg - 1;
+			end
+			3'd6: begin
+				A_or = A_or_reg;
+			end
+			default: begin
+				A_or = {7{1'd0}};
+			end
+		endcase
+	end
+	else begin
+		A_or = {{1'd0}};
+	end
+end
+
+// ============================================
+// or_in_tmp
+// ============================================
+always@(posedge clk or negedge rst_n) begin
+	if(!rst_n) begin
+		or_pooling_reg <= #1 0;
+	end
+	else begin
+		or_pooling_reg <= #1 or_pooling;//[15:0]
+	end
+end
+always@(*) begin
+	curr_state_or_output=curr_state_or;
+	if(pxl_cnt_FSM2 >= 4) begin
+		case(curr_state_or)
+			3'd0: 
+			begin
+				for(i = 0;i<`SRAM_NUM;i=i+1)
+				begin
+					or_in_tmp=0;
+				end
+			end
+			3'd1: 
+			begin
+				for(i =0;i<`SRAM_NUM;i=i+1)
+				begin
+					or_in_tmp[(i+1) * 8 - 1 -: 8] =partial_sum[(i+1) * 8 - 1 -: 8];
+				end
+			end
+			3'd2: begin
+				for(i = 0; i < `SRAM_NUM; i = i + 1) begin
+					or_pooling[(i+1) * 16 - 1 -: 16] = {8'd0,partial_sum[(i+1) * 8 - 1 -: 8]};
+				end
+			end
+			3'd3: begin
+				for(i = 0; i < `SRAM_NUM; i = i + 1) begin
+					or_pooling[(i+1) * 16 - 1 -: 16] = {partial_sum[(i+1) * 8 - 1 -: 8],or_pooling_reg[(i*2+1) * 8 - 1 -: 8]};
+				end
+			end
+			3'd4: 
+			begin
+				for(i = 0;i<`SRAM_NUM;i=i+1)
+				begin
+					or_pooling_output=or_pooling_reg;
+				end
+			end
+			3'd5: begin
+				for(i = 0; i <`SRAM_NUM;i=i+1) begin
+					or_pooling[(i+1) * 16 - 1 -: 16]={partial_sum[(i+1) * 8 - 1 -:8],Q_or[(i+1) * 8 - 1 -: 8]};
+				end
+			end
+			3'd6: begin
+				or_in_tmp =0;
+				or_pooling = 0;
+			end
+		endcase
+	end
+	else begin
+		or_pooling = 0;
+	end
+end
+
+// ============================================
+// D_or
+// ============================================
+always@(posedge clk or negedge rst_n)
+begin
+	if(rst_n)
+	begin
+		D_or_reg <= #1 0;
+	end
+	else
+	begin
+		D_or_reg <= #1 D_or;
+	end
+
+end
+always@(*) begin
+	if(pxl_cnt_FSM2 >= 4) begin
+		case(curr_state_or)
+			3'd0: begin
+					D_or = 0;
+			end
+			3'd1: begin
+				D_or = or_in_tmp;
+			end
+			3'd2: begin
+					D_or = 0;
+			end
+			3'd3: begin
+					D_or = 0;
+			end
+			3'd4: begin
+					D_or = 0;
+			end
+			3'd5: begin
+					D_or = 0;
+			end
+			3'd6: begin
+					D_or = 0;
+			end
+			default: begin
+				D_or = 0;
+			end
+		endcase
+	end
+	else begin
+		for(i = 0;i<`SRAM_NUM;i=i+1) 
+		begin
+			D_or[(i+1) * 8 - 1 -:8]=partial_sum[(i+1) * 8 - 1 -:8];
+		end
 	end
 end
 

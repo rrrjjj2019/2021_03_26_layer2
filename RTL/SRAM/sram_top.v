@@ -14,6 +14,7 @@ module sram_top(
 	input	[`CHANNEL_OUT * 8 - 1 : 0]	data_i_DRAM,// input data from DRAM
 	input	[`CHANNEL_OUT * 8 - 1 : 0]	data_i_CCM,	// input data from CCM
 	input	[`CHANNEL_OUT * 24 - 1 : 0]	weight_in,
+	input	[`filter_num * 8 - 1 : 0]	partial_sum;//input data from CCM
 	output	[`PEA_num * 8 - 1 : 0]		data1,
 	output	[`PEA_num * 8 - 1 : 0]		data2,
 	output	[`PEA_num * 8 - 1 : 0]		data3,
@@ -112,14 +113,14 @@ wsram wsram(
 // 	.Q(Q_ir)
 // );
 
-// orsram orsram(
-// 	.clk(clk),
-// 	.CEN(CEN_or),
-// 	.WEN(WEN_or),
-// 	.A({`SRAM_NUM{A_or}}),
-// 	.D(D_or),
-// 	.Q(Q_or)
-// );
+ orsram orsram(
+ 	.clk(clk),
+ 	.CEN(CEN_or),
+ 	.WEN(WEN_or),
+ 	.A({`SRAM_NUM{A_or}}),
+ 	.D(D_or),
+ 	.Q(Q_or)
+ );
 
 sram_controller controller(
 	.clk(clk),
@@ -154,10 +155,16 @@ sram_controller controller(
 	// .WEN_ir(WEN_ir),
 	// .A_ir(A_ir),
 	// .D_ir(D_ir),
-	// .CEN_or(CEN_or),
-	// .WEN_or(WEN_or),
-	// .A_or(A_or),
-	// .D_or(D_or),
+
+	.partial_sum(partial_sum),
+	.CEN_or(CEN_or),
+	.WEN_or(WEN_or),
+	.A_or(A_or),
+	.D_or(D_or),
+	.Q_or(Q_or),
+	.or_pooling_output(or_pooling_output),
+	.curr_state_or_output(curr_state_or_output),
+
 	.sram_sel1(sram_sel1),
 	.sram_sel2(sram_sel2),
 	.data_process_reg(data_process),

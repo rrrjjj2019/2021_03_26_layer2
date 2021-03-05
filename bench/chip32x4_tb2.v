@@ -34,6 +34,10 @@ reg		[`CHANNEL_OUT * 24 - 1 : 0]				weight_in;
 wire    [`filter_num * `PEA_num * 8 - 1 : 0]	sum;
 wire											sum_reg_valid;
 wire 	[`filter_num * 8 - 1 : 0]				partial_sum;
+wire [`CHANNEL_OUT * 8 - 1 : 0] ans;
+wire [14:0] OR_pxl_cnt;
+wire [2:0] curr_state_or_output;
+
 //wire    [`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg;
 
 integer								fp;
@@ -53,9 +57,9 @@ integer 							f_out_ans [0:`CHANNEL_OUT - 1];
 integer 							f_out_log;
 integer 							f_out;
 
-reg     [7:0]  output_mem_tmp  [0:`CHANNEL_OUT - 1] [0:`OUTPUT_ROW * `OUTPUT_COL - 1];
-reg     [7:0]  output_mem      [0:`CHANNEL_OUT - 1] [0:`OUTPUT_ROW - 1] [0:`OUTPUT_COL - 1];
-reg     [7:0]  output_ans      [0:`CHANNEL_OUT - 1] [0:`OUTPUT_ROW * `OUTPUT_COL - 1];
+reg     [7:0]  output_mem_tmp  [0:`CHANNEL_OUT - 1] [0:(`OUTPUT_ROW/2) * (`OUTPUT_COL/2) - 1];
+reg     [7:0]  output_mem      [0:`CHANNEL_OUT - 1] [0:(`OUTPUT_ROW/2) - 1] [0:(`OUTPUT_COL/2) - 1];
+reg     [7:0]  output_ans      [0:`CHANNEL_OUT - 1] [0:(`OUTPUT_ROW/2) * (`OUTPUT_COL/2) - 1];
 
 
 chip chip1(
@@ -66,8 +70,11 @@ chip chip1(
 	.weight_in(weight_in),
 	.sum(sum),
 	.sum_reg_valid(sum_reg_valid),
+	.ans(ans),
+	.curr_state_or_output(curr_state_or_output),
+	.OR_pxl_cnt(OR_pxl_cnt)
 	//.sum_reg(sum_reg),
-	.partial_sum(partial_sum)
+	//.partial_sum(partial_sum)
 );
 // initial begin
 // 	$sdf_annotate("../rtl/chip_syn.sdf", chip1, , "gate_sim.log");
@@ -75,7 +82,7 @@ chip chip1(
 initial begin
 	//$dumpfile("./waveform/chip.vcd");
 	//$dumpvars(0, chip_tb);
-	$fsdbDumpfile("./waveform/chip_quantize_sim.fsdb");
+	$fsdbDumpfile("./waveform/chip_quantize_pooling_sim.fsdb");
 	$fsdbDumpvars(0, chip_tb);
 
 	// ============================================
@@ -136,31 +143,31 @@ initial begin
 	// c stand for output channel
 	for(c = 0; c < `CHANNEL_OUT; c = c + 1)
 	begin
-		fout_ans_name = $sformatf("../bench/output_ans_128x128_three_channel_quan_plus/output_ans_01_%02d.txt", c+1);
+		fout_ans_name = $sformatf("../bench/output_ans_64x64_maxpooling/output_ans_01_%02d.txt", c+1);
 		
 		f_out_ans[c] = $fopen(fout_ans_name, "r");
 
-		for (i = 0; i < `OUTPUT_ROW * `OUTPUT_COL; i = i + 1)
+		for (i = 0; i < (`OUTPUT_ROW/2) * (`OUTPUT_COL/2); i = i + 1)
 		begin
 			scan_inputs = $fscanf(f_out_ans[c], "%h", output_mem_tmp[c][i]);
 		end
 
-		for (i = 0; i < `OUTPUT_ROW; i = i + 1)
+		for (i = 0; i < (`OUTPUT_ROW/2); i = i + 1)
 		begin
-			for (j = 0; j < `OUTPUT_COL; j = j + 1)
+			for (j = 0; j < (`OUTPUT_COL/2); j = j + 1)
 			begin
 				if (i % 2 == 0)
-					output_mem[c][i][j] = output_mem_tmp[c][`OUTPUT_COL*i+j];
+					output_mem[c][i][j] = output_mem_tmp[c][(`OUTPUT_COL/2)*i+j];
 				else
-					output_mem[c][i][`OUTPUT_COL-j-1] = output_mem_tmp[c][`OUTPUT_COL*i+j];
+					output_mem[c][i][j] = output_mem_tmp[c][(`OUTPUT_COL/2)*i+j];
 			end
 		end
 
-		for (i = 0; i < `OUTPUT_ROW; i = i + 1)
+		for (i = 0; i < (`OUTPUT_ROW/2); i = i + 1)
 		begin
-			for (j = 0; j < `OUTPUT_COL; j = j + 1)
+			for (j = 0; j < (`OUTPUT_COL/2); j = j + 1)
 			begin
-				output_ans[c][`OUTPUT_COL*i+j] = output_mem[c][i][j];
+				output_ans[c][(`OUTPUT_COL/2)*i+j] = output_mem[c][i][j];
 			end
 		end
 
@@ -301,9 +308,9 @@ end
 initial begin
 	while(1) begin
 		@(posedge clk)
-		if (sum_reg_valid) begin
+		if (curr_state_or_output == 4) begin
 			for(c = 0; c < `CHANNEL_OUT; c = c + 1)begin
-				write_to_file(partial_sum[(c + 1) * 8 - 1 -: 8], output_ans[c][index]);
+				write_to_file(ans[(c + 1) * 8 - 1 -: 8], output_ans[c][index]);
 			end
 			index = index + 1;
 		end

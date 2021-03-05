@@ -14,10 +14,10 @@ module chip(
 	input	[`CHANNEL_OUT * 24 - 1 : 0]				weight_in,
 
 	output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum,
-	output											sum_reg_valid,
+	output											sum_reg_valid
 	//output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg,
 
-	output	[`filter_num * 8 - 1 : 0]				partial_sum
+	
 );
 
 wire	[`CHANNEL_OUT * 8 - 1 : 0]	data_i_DRAM;
@@ -39,6 +39,8 @@ wire	[8:0]						row;
 
 wire								en;
 wire								en_output;
+//=========ORSRAM===========
+wire 	[`filter_num * 8 - 1 : 0]				partial_sum;
 
 assign data_i_DRAM = {{28{8'd0}}, data_in};
 
@@ -51,6 +53,7 @@ assign row = `ROW_first_layer + 2;
 // assign Data1 = data1[7:0];
 // assign Data2 = data2[7:0];
 // assign Data3 = data3[7:0];
+
 
 sram_top sram_module(
 	.clk(clk),
@@ -65,7 +68,9 @@ sram_top sram_module(
 	.Q_w(Q_w),
 	.CCM_en(en),
 	.CCM_en_cnt(en_output),
-	.Weight_en(Weight_en)
+	.Weight_en(Weight_en),
+	.partial_sum(partial_sum)
+
 );
 
 CCM_top CCM(
@@ -99,6 +104,14 @@ CCM_top CCM(
 	// .sum_reg(sum_reg),
 
 	.partial_sum(partial_sum)
+);
+
+maxpolling maxpolling(
+			.pixel_1and2(or_pooling_output),
+			.pixel_3(Q_or),
+			.pixel_4(partial_sum),
+			.curr_state_or(curr_state_or_output),
+			.ans(ans)
 );
 
 endmodule
