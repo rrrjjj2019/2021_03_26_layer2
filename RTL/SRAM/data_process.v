@@ -18,6 +18,7 @@ module Data_process(
 	input		[`CHANNEL_OUT * 16 - 1 : 0]	data_in_1,
 	input									FSRAM2,			// for choosing which SRAM is input
 	input		[`CHANNEL_OUT * 16 - 1 : 0]	data_in_2,
+	input 		[3 - 1 : 0]					partial_sum_index,
 	output	reg	[`CHANNEL_IN * 8 - 1 : 0]	data1,
 	output	reg	[`CHANNEL_IN * 8 - 1 : 0]	data2,
 	output	reg	[`CHANNEL_IN * 8 - 1 : 0]	data3
@@ -66,7 +67,7 @@ always@(*) begin
 				end
 				3'd3: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 9 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1 + (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				3'd4: begin
@@ -74,12 +75,12 @@ always@(*) begin
 				end
 				3'd5: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 1 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1 + (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd6: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 9 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1 + (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				default: begin
@@ -100,7 +101,7 @@ always@(*) begin
 				end
 				3'd3: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 9 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1 + (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				3'd4: begin
@@ -108,12 +109,12 @@ always@(*) begin
 				end
 				3'd5: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 1 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd6: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 9 -: 8];
+						data1[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				default: begin
@@ -143,12 +144,12 @@ always@(*) begin
 				end
 				3'd2: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data2[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 1 -: 8];
+						data2[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd3: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data2[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 1 -: 8];
+						data2[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd4: begin
@@ -175,12 +176,12 @@ always@(*) begin
 				end
 				3'd2: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data2[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 1 -: 8];
+						data2[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd3: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data2[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 1 -: 8];
+						data2[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 1 -: 8];
 					end
 				end
 				3'd4: begin
@@ -219,7 +220,7 @@ always@(*) begin
 				end
 				3'd2: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data3[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1) * 16 - 9 -: 8];
+						data3[(i + 1) * 8 - 1 -: 8] = data_in_1_reg[(i + 1　+ (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				3'd3: begin
@@ -249,7 +250,7 @@ always@(*) begin
 				end
 				3'd2: begin
 					for(i = 0; i < `CHANNEL_IN; i = i + 1) begin
-						data3[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1) * 16 - 9 -: 8];
+						data3[(i + 1) * 8 - 1 -: 8] = data_in_2_reg[(i + 1 + (partial_sum_index * 4)) * 16 - 9 -: 8];
 					end
 				end
 				3'd3: begin

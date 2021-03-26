@@ -19,6 +19,8 @@ module CCM_top(
 
 	input											Weight_en,
 	input	[`SRAM_NUM * 72 - 1 : 0]				Weight,
+
+	input   [8 - 1:0]					SIZE_maxpooling_IN,
 	// input	[`filter_num * `PEA_num * 8 - 1 : 0]	Weight1,
 	// input	[`filter_num * `PEA_num * 8 - 1 : 0]	Weight2,
 	// input	[`filter_num * `PEA_num * 8 - 1 : 0]	Weight3,
@@ -34,6 +36,7 @@ module CCM_top(
 	//output	[`filter_num * `PEA_num * 8 - 1 : 0]	sum_reg,
 
 	output	[`filter_num * 8 - 1 : 0]				partial_sum
+	
 );
 
 wire	[`PEA_num * 8 - 1 : 0]	buf_in1;
@@ -98,7 +101,9 @@ generate
 				.buf_in2		(buf_in2[(j + 1) * 8 - 1 -: 8]),
 
 				.buf_out1		(buf_out1[(j + 1) * 8 - 1 -: 8]),
-				.buf_out2		(buf_out2[(j + 1) * 8 - 1 -: 8])
+				.buf_out2		(buf_out2[(j + 1) * 8 - 1 -: 8]),
+				
+				.SIZE_maxpooling_IN(SIZE_maxpooling_IN)
 			);
 		end
 endgenerate

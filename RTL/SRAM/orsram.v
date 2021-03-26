@@ -12,7 +12,7 @@ module orsram(
 generate
 	genvar i;
 	for(i = 0; i < `SRAM_NUM; i = i + 1) begin
-		rf_sp_orsram orsram(
+		rf_sp_hde orsram(
 			.CENY(),
 			.WENY(),
 			.AY(),

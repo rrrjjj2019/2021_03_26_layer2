@@ -1,2 +1,17 @@
 write from sram_controller.v:947
 redesign FSM2
+
+
+
+//2021/03/05
+address of FSRAM1 & FSRAM2 need to be changed.
+curr_state_FSM controll logic may need to be redesigned.
+enable signals need to be redesigned.
+
+
+// 2021/03/17
+WENA_1 FSM_2 -> FSM_3
+RENA_1 FSM_2 -> FSM_3
+RENB_1 FSM_2 -> FSM_3
+
+modified files: chip32x4.v, sram_top.v

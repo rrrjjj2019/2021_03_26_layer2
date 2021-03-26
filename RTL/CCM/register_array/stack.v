@@ -5,6 +5,7 @@ module stack(
 	input			rst_n,
 	input			en,
 	input	[8:0]	col,
+	input   [8-1:0] SIZE_maxpooling_IN,
 	input	[7:0]	buf_in,
 	output	[7:0]	buf_out
 );
@@ -156,7 +157,7 @@ always@(*) begin
 				next_state = 1;
 			end
 			3'd1: begin // FIRST RIGHT
-				if(col_cnt == `COL - 2) begin
+				if(col_cnt == SIZE_maxpooling_IN - 2) begin
 					next_state = 2;
 				end
 				else begin
@@ -164,7 +165,7 @@ always@(*) begin
 				end
 			end
 			3'd2: begin // PAUSE
-				if(row_cnt == `ROW - 1) begin
+				if(row_cnt == SIZE_maxpooling_IN - 1) begin
 					next_state = 5;
 				end
 				else if(row_cnt[0] == 0) begin

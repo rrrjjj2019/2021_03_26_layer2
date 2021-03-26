@@ -14,14 +14,22 @@ module sram_top(
 	input	[`CHANNEL_OUT * 8 - 1 : 0]	data_i_DRAM,// input data from DRAM
 	input	[`CHANNEL_OUT * 8 - 1 : 0]	data_i_CCM,	// input data from CCM
 	input	[`CHANNEL_OUT * 24 - 1 : 0]	weight_in,
-	input	[`filter_num * 8 - 1 : 0]	partial_sum;//input data from CCM
+	input	[`filter_num * 8 - 1 : 0]	partial_sum, //input data from CCM
+	input  								sum_reg_valid,
+	input 	[`CHANNEL_OUT * 8 - 1 : 0]	maxpooling_ans,
 	output	[`PEA_num * 8 - 1 : 0]		data1,
 	output	[`PEA_num * 8 - 1 : 0]		data2,
 	output	[`PEA_num * 8 - 1 : 0]		data3,
 	output	[`SRAM_NUM * 72 - 1 : 0]	Q_w,
 	output								CCM_en,
 	output 								CCM_en_cnt,
-	output								Weight_en
+	output								Weight_en,
+	output	[`CHANNEL_OUT * 16 - 1 : 0]	or_pooling_output,
+	output	[2:0]	curr_state_or_output,
+	output	[8 - 1:0]	OR_pxl_cnt,
+	output	[`CHANNEL_OUT * 8 - 1: 0]	Q_or,
+
+	output  [8 - 1:0]					SIZE_maxpooling_IN
 );
 
 wire								CENA_1;
@@ -60,12 +68,12 @@ wire	[`SRAM_NUM * 16 - 1 : 0]	Q_ir;
 wire								CEN_or;
 wire	[`SRAM_NUM - 1 : 0]			WEN_or;
 wire	[6:0]						A_or;
-wire	[`SRAM_NUM * 16 - 1 : 0]	D_or;
-wire	[`SRAM_NUM * 16 - 1 : 0]	Q_or;
+wire	[`SRAM_NUM * 8 - 1 : 0]	D_or;
 
 wire								sram_sel1;
 wire								sram_sel2;
 wire	[2:0]						data_process;
+wire    [3 - 1: 0] 					partial_sum_index;
 
 fsram fsram1(
 	.clk(clk),
@@ -164,14 +172,20 @@ sram_controller controller(
 	.Q_or(Q_or),
 	.or_pooling_output(or_pooling_output),
 	.curr_state_or_output(curr_state_or_output),
+	.OR_pxl_cnt(OR_pxl_cnt),
 
 	.sram_sel1(sram_sel1),
 	.sram_sel2(sram_sel2),
 	.data_process_reg(data_process),
 	.CCM_en(CCM_en),
 	.CCM_en_cnt(CCM_en_cnt),
-	.Weight_en(Weight_en)
-	);
+	.Weight_en(Weight_en),
+	.sum_reg_valid(sum_reg_valid),
+	.maxpooling_ans(maxpooling_ans),
+
+	.SIZE_maxpooling_IN(SIZE_maxpooling_IN),
+	.partial_sum_index(partial_sum_index)
+);
 
 Data_process data_process1(
 	.clk(clk),
@@ -182,7 +196,8 @@ Data_process data_process1(
 	.data_in_2(QB_2),
 	.data1(data1),
 	.data2(data2),
-	.data3(data3)
+	.data3(data3),
+	.partial_sum_index(partial_sum_index)
 );
 
 endmodule
